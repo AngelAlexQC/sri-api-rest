@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<factura id="comprobante" version="2.1.0">
+  <infoTributaria>
+    <ambiente>1</ambiente>
+    <tipoEmision>1</tipoEmision>
+    <razonSocial>Empresa de prueba S.A.</razonSocial>
+    <nombreComercial>Mi empresa</nombreComercial>
+    <ruc>1309448197001</ruc>
+    <claveAcceso>2709202101130944819700110010010000001232643548611</claveAcceso>
+    <codDoc>01</codDoc>
+    <estab>001</estab>
+    <ptoEmi>001</ptoEmi>
+    <secuencial>000000123</secuencial>
+    <dirMatriz>Jr. Prueba 123</dirMatriz>
+  </infoTributaria>
+  <infoFactura>
+    <fechaEmision>26/09/2021</fechaEmision>
+    <dirEstablecimiento>Jr. Establecimiento 123</dirEstablecimiento>
+    <contribuyenteEspecial>1309448197001</contribuyenteEspecial>
+    <obligadoContabilidad>SI</obligadoContabilidad>
+    <tipoIdentificacionComprador>05</tipoIdentificacionComprador>
+    <razonSocialComprador>Cliente de prueba S.A.</razonSocialComprador>
+    <identificacionComprador>1234567890</identificacionComprador>
+    <totalSinImpuestos>123.45</totalSinImpuestos>
+    <totalDescuento>0.00</totalDescuento>
+    <totalConImpuestos>
+      <totalImpuesto>
+        <codigo>2</codigo>
+        <codigoPorcentaje>2</codigoPorcentaje>
+        <baseImponible>123.45</baseImponible>
+        <valor>14.81</valor>
+      </totalImpuesto>
+    </totalConImpuestos>
+    <propina>0.00</propina>
+    <importeTotal>138.26</importeTotal>
+    <moneda>DOLAR</moneda>
+    <pagos>
+      <pago>
+        <formaPago>01</formaPago>
+        <total>138.26</total>
+        <plazo>30</plazo>
+        <unidadTiempo>dias</unidadTiempo>
+      </pago>
+    </pagos>
+  </infoFactura>
+  <detalles>
+    <detalle>
+      <codigoPrincipal>COD001</codigoPrincipal>
+      <descripcion>PROD001</descripcion>
+      <cantidad>1</cantidad>
+      <precioUnitario>123.45</precioUnitario>
+      <descuento>0.00</descuento>
+      <precioTotalSinImpuesto>123.45</precioTotalSinImpuesto>
+      <impuestos>
+        <impuesto>
+          <codigo>2</codigo>
+          <codigoPorcentaje>2</codigoPorcentaje>
+          <tarifa>12</tarifa>
+          <baseImponible>123.45</baseImponible>
+          <valor>14.81</valor>
+        </impuesto>
+      </impuestos>
+    </detalle>
+  </detalles>
+  <infoAdicional>
+    <campoAdicional nombre="Vendedor">Ángel Quiroz</campoAdicional>
+    <campoAdicional nombre="Caja">Caja 1</campoAdicional>
+  </infoAdicional>
+</factura>
