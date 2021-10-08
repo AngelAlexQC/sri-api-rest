@@ -3,7 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\Factura;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class TextFacturaXML extends TestCase
 {
@@ -20,9 +20,9 @@ class TextFacturaXML extends TestCase
         $factura->ruc = '0850539479001';
         $factura->establecimiento = '001';
         $factura->punto_emision = '001';
-        $factura->secuencial = '000000123';
+        $factura->secuencial = '000000160';
         $factura->direccion_matriz = 'Jr. Prueba 123';
-        $factura->fecha_emision = '26/09/2021';
+        $factura->fecha_emision = now()->format('d/m/Y');
         $factura->dir_establecimiento = 'Jr. Establecimiento 123';
         $factura->contribuyente_especial = '0850539479001';
         $factura->obligado_contabilidad = 'SI';
@@ -37,8 +37,9 @@ class TextFacturaXML extends TestCase
         $factura->moneda = 'DOLAR';
         $factura->total = '138.26';
 
-        print($factura->getXML());
+        //print($factura->getXML());
         $factura->saveXMLToFile();
+        //$factura->sendXML();
 
         $this->assertTrue(true);
     }

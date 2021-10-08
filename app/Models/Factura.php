@@ -6,6 +6,9 @@ use Carbon\Carbon;
 use DOMDocument;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Http;
+use RobRichards\XMLSecLibs\XMLSecurityDSig;
+
 
 class Factura extends Model
 {
@@ -136,70 +139,57 @@ class Factura extends Model
         return $xml->saveXML();
     }
 
+    public function getEstructura()
+    {
+        $fecha = now()->format('dmY');
+        $tipo_comprobante = '01';
+        $ruc = $this->ruc;
+        $tipo_ambiente = '1';
+        $serie = $this->establecimiento  . $this->punto_emision;
+        $secuencial = $this->secuencial;
+        $codigo_numerico = '12345678';
+        $tipo_emision = '1';
+        return $fecha . $tipo_comprobante . $ruc . $tipo_ambiente . $serie . $secuencial . $codigo_numerico . $tipo_emision;
+    }
+
     /**
      * Generar Clave de Acceso
      * @return string
      */
     public function getClaveAcceso()
     {
-        // Fecha en formato ddmmyyyy
-        $fecha = Carbon::parse(strtotime($this->fecha_emision))->format('dmY');
-
-        return
-            $fecha . '01' .
-            $this->ruc .
-            $this->ambiente .
-            $this->establecimiento .
-            $this->punto_emision .
-            $this->secuencial .
-            '26435486' .
-            '1' . // Tipo de emision
-            $this->generarDigitoVerificador();
+        return $this->getEstructura() . $this->getDigitoVerificador();
     }
 
-    public function generarDigitoVerificador()
+    public function getDigitoVerificador()
     {
-        $fecha = Carbon::parse(strtotime($this->fecha_emision))->format('dmY');
-        $estructura =  $fecha . '01' .
-            $this->ruc .
-            $this->ambiente .
-            $this->establecimiento .
-            $this->punto_emision .
-            $this->secuencial .
-            '26435486' .
-            '1';
-        // Limpiar el numero
-        $estructura = str_replace('.', '', $estructura);
-        $estructura = str_replace(',', '', $estructura);
-        $estructura = str_replace('-', '', $estructura);
-        $estructura = str_replace(' ', '', $estructura);
-
-        // Validar que los caracteres sean numericos
-        if (!ctype_digit($estructura)) {
-            return false;
-        }
-
-        $sum = 0;
-        $factor = 2;
-
-        for ($i = 0; $i < strlen($estructura); $i++) {
-            $sum += $estructura[$i] * $factor;
-            if ($factor == 7) {
-                $factor = 2;
-            } else {
-                $factor++;
+        $estructura = $this->getEstructura();
+        if (strlen($estructura) == 48) {
+            $digits = str_replace(array('.', ','), array('' . ''), strrev($estructura));
+            if (!ctype_digit($digits)) {
+                return false;
             }
-        }
-
-        $dv = 11 - ($sum % 11);
-        if ($dv == 10) {
-            return '1';
-        } elseif ($dv == 11) {
-            return '0';
-        } else {
+            $sum = 0;
+            $factor = 2;
+            for ($i = 0; $i < strlen($digits); $i++) {
+                $sum += substr($digits, $i, 1) * $factor;
+                if ($factor == 7) {
+                    $factor = 2;
+                } else {
+                    $factor++;
+                }
+            }
+            $dv = 11 - ($sum % 11);
+            if ($dv == 10) {
+                return 1;
+            }
+            if ($dv == 11) {
+                return 0;
+            }
             return $dv;
         }
     }
+
 
     /**
      * Guarda el XML en un archivo
@@ -208,8 +198,70 @@ class Factura extends Model
     public function saveXMLToFile()
     {
         $xml = $this->getXML();
-        $file = fopen('xml/factura' . $this->secuencial . '.xml', 'w');
+        $file = fopen('xml' . DIRECTORY_SEPARATOR . $this->getClaveAcceso() . '.xml', 'w');
         fwrite($file, $xml);
         fclose($file);
+    }
+
+    /**
+     * Firma el archivo XML
+     * @return void
+     */
+    public function signXML()
+    {
+        // Load the XML to be signed
+        $doc = new DOMDocument();
+        $doc->load('xml/factura' . $this->secuencial . '.xml');
+
+        // Create a new XMLSignature
+        $xml = new XMLSecurityDSig();
+
+        // Create a new Security object
+        $objDSig = new XMLSecurityDSig();
+        // Use the c14n exclusive canonicalization
+        $objDSig->setCanonicalMethod(XMLSecurityDSig::EXC_C14N);
+        // Sign using SHA-256
+        $objDSig->addReference(
+            $doc,
+            XMLSecurityDSig::SHA256,
+            array('http://www.w3.org/2000/09/xmldsig#enveloped-signature')
+        );
+    }
+
+    /**
+     * Envia el XML al SRI
+     * @return string
+     */
+    public function sendXML()
+    {
+        $url = 'https://celcer.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl';
+        $file = file_get_contents('xml/factura' . $this->secuencial . '.xml');
+        $xml_envio = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ec=\"http://ec.gob.sri.ws.recepcion\">";
+        $xml_envio .= "<soapenv:Header/>";
+        $xml_envio .= "<soapenv:Body>";
+        $xml_envio .= "<ec:validarComprobante>";
+        $xml_envio .= "<xml>" . base64_encode($file) . "</xml>";
+        $xml_envio .= "</ec:validarComprobante>";
+        $xml_envio .= "</soapenv:Body>";
+        $xml_envio .= "</soapenv:Envelope>";
+
+        $headers = array(
+            "Content-type: text/xml;charset=\"utf-8\"",
+            "Accept: text/xml",
+        );
+
+        // Envio de la petición
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $xml_envio);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        $result = curl_exec($ch);
+        print_r($result);
+        curl_close($ch);
+        return $result;
     }
 }

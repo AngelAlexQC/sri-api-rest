@@ -5,22 +5,22 @@
     <tipoEmision>1</tipoEmision>
     <razonSocial>Empresa de prueba S.A.</razonSocial>
     <nombreComercial>Mi empresa</nombreComercial>
-    <ruc>1309448197001</ruc>
-    <claveAcceso>2709202101130944819700110010010000001232643548611</claveAcceso>
+    <ruc>0850539479001</ruc>
+    <claveAcceso>0610202101085053947900110010010000001601234567817</claveAcceso>
     <codDoc>01</codDoc>
     <estab>001</estab>
     <ptoEmi>001</ptoEmi>
-    <secuencial>000000123</secuencial>
+    <secuencial>000000160</secuencial>
     <dirMatriz>Jr. Prueba 123</dirMatriz>
   </infoTributaria>
   <infoFactura>
-    <fechaEmision>26/09/2021</fechaEmision>
+    <fechaEmision>06/10/2021</fechaEmision>
     <dirEstablecimiento>Jr. Establecimiento 123</dirEstablecimiento>
-    <contribuyenteEspecial>1309448197001</contribuyenteEspecial>
+    <contribuyenteEspecial>0850539479001</contribuyenteEspecial>
     <obligadoContabilidad>SI</obligadoContabilidad>
     <tipoIdentificacionComprador>05</tipoIdentificacionComprador>
     <razonSocialComprador>Cliente de prueba S.A.</razonSocialComprador>
-    <identificacionComprador>1234567890</identificacionComprador>
+    <identificacionComprador>1309448197</identificacionComprador>
     <totalSinImpuestos>123.45</totalSinImpuestos>
     <totalDescuento>0.00</totalDescuento>
     <totalConImpuestos>
