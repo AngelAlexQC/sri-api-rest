@@ -20,7 +20,7 @@ class TextFacturaXML extends TestCase
         $factura->ruc = '0850539479001';
         $factura->establecimiento = '001';
         $factura->punto_emision = '001';
-        $factura->secuencial = '000000160';
+        $factura->secuencial = '000000186';
         $factura->direccion_matriz = 'Jr. Prueba 123';
         $factura->fecha_emision = now()->format('d/m/Y');
         $factura->dir_establecimiento = 'Jr. Establecimiento 123';
@@ -38,9 +38,9 @@ class TextFacturaXML extends TestCase
         $factura->total = '138.26';
 
         //print($factura->getXML());
-        $factura->saveXMLToFile();
-        //$factura->sendXML();
-
+        // $factura->saveXMLToFile();
+        print_r($factura->signXML('29011998@Angel'));
+        print_r($factura->sendXML());
         $this->assertTrue(true);
     }
 }

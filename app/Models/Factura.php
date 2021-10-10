@@ -6,13 +6,18 @@ use Carbon\Carbon;
 use DOMDocument;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use RobRichards\XMLSecLibs\XMLSecurityDSig;
-
+use RobRichards\XMLSecLibs\XMLSecurityKey;
+use SimpleXMLElement;
+use SoapClient;
 
 class Factura extends Model
 {
     use HasFactory;
+    const BCE = 1;
+    const SEC_DATA = 2;
+    const CONS_JUD = 3;
 
     /**
      * Retornar la factura en formato XML
@@ -193,7 +198,7 @@ class Factura extends Model
 
     /**
      * Guarda el XML en un archivo
-     * @return void
+     * @return string
      */
     public function saveXMLToFile()
     {
@@ -201,31 +206,28 @@ class Factura extends Model
         $file = fopen('xml' . DIRECTORY_SEPARATOR . $this->getClaveAcceso() . '.xml', 'w');
         fwrite($file, $xml);
         fclose($file);
+        return 'xml' . DIRECTORY_SEPARATOR . $this->getClaveAcceso() . '.xml';
     }
 
     /**
      * Firma el archivo XML
+     * @param string $passPhrase
+     * @param string $tokenType
      * @return void
      */
-    public function signXML()
+    public function signXML(string $passPhrase, $tokenType = 3)
     {
-        // Load the XML to be signed
-        $doc = new DOMDocument();
-        $doc->load('xml/factura' . $this->secuencial . '.xml');
-
-        // Create a new XMLSignature
-        $xml = new XMLSecurityDSig();
-
-        // Create a new Security object
-        $objDSig = new XMLSecurityDSig();
-        // Use the c14n exclusive canonicalization
-        $objDSig->setCanonicalMethod(XMLSecurityDSig::EXC_C14N);
-        // Sign using SHA-256
-        $objDSig->addReference(
-            $doc,
-            XMLSecurityDSig::SHA256,
-            array('http://www.w3.org/2000/09/xmldsig#enveloped-signature')
+        $xmlPath = $this->saveXMLToFile();
+        $certificatePath = 'certs' . DIRECTORY_SEPARATOR . $this->ruc . '.p12';
+        // Execute 'QuijoteLuiFirmador.jar' jar file on bin folder, passing the XML file, the certificate, the password and get output
+        $signedFileName = shell_exec(
+            'java -Dfile.encoding=UTF-8 -jar ' .
+                base_path('bin' . DIRECTORY_SEPARATOR . 'QuijoteLuiFirmador.jar') . ' ' .
+                $xmlPath . ' ' .
+                $certificatePath . ' ' .
+                $passPhrase . " " . $tokenType
         );
+        return $signedFileName;
     }
 
     /**
@@ -235,12 +237,15 @@ class Factura extends Model
     public function sendXML()
     {
         $url = 'https://celcer.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl';
-        $file = file_get_contents('xml/factura' . $this->secuencial . '.xml');
+        $file = file_get_contents(
+            base_path('signed' . DIRECTORY_SEPARATOR . $this->getClaveAcceso() . '-signed.xml')
+        );
+        $base64 = base64_encode($file);
         $xml_envio = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ec=\"http://ec.gob.sri.ws.recepcion\">";
         $xml_envio .= "<soapenv:Header/>";
         $xml_envio .= "<soapenv:Body>";
         $xml_envio .= "<ec:validarComprobante>";
-        $xml_envio .= "<xml>" . base64_encode($file) . "</xml>";
+        $xml_envio .= "<xml>" . $base64 . "</xml>";
         $xml_envio .= "</ec:validarComprobante>";
         $xml_envio .= "</soapenv:Body>";
         $xml_envio .= "</soapenv:Envelope>";
@@ -250,7 +255,6 @@ class Factura extends Model
             "Accept: text/xml",
         );
 
-        // Envio de la petición
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
@@ -260,8 +264,12 @@ class Factura extends Model
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         $result = curl_exec($ch);
-        print_r($result);
         curl_close($ch);
+        // Save soap response to file
+        $file = fopen('xml' . DIRECTORY_SEPARATOR .
+            'responses' . DIRECTORY_SEPARATOR . $this->getClaveAcceso() . '.xml', 'w');
+        fwrite($file, $result);
+        fclose($file);
         return $result;
     }
 }
