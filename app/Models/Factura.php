@@ -272,4 +272,39 @@ class Factura extends Model
         fclose($file);
         return $result;
     }
+
+    /**
+     * Autoriza el XML
+     * @return string
+     */
+    public function autorizarXML()
+    {
+        $url = 'https://celcer.sri.gob.ec/comprobantes-electronicos-ws/AutorizacionComprobantesOffline?wsdl';
+        $xml_envio = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ec=\"http://ec.gob.sri.ws.autorizacion\">";
+        $xml_envio .= "<soapenv:Header/>";
+        $xml_envio .= "<soapenv:Body>";
+        $xml_envio .= "<ec:autorizacionComprobante>";
+        $xml_envio .= "<claveAccesoComprobante>" . $this->getClaveAcceso() . "</claveAccesoComprobante>";
+        $xml_envio .= "</ec:autorizacionComprobante>";
+        $xml_envio .= "</soapenv:Body>";
+        $xml_envio .= "</soapenv:Envelope>";
+
+        $headers = array(
+            "Content-type: text/xml;charset=\"utf-8\"",
+            "Accept: text/xml",
+        );
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $xml_envio);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        $result = curl_exec($ch);
+        curl_close($ch);
+        
+        return $result;
+    }
 }
